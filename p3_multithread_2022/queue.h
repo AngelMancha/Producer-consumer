@@ -9,7 +9,11 @@ struct element {
 
 typedef struct queue {
 	// Define the struct yourself
-	int param1;
+	int size; //size of the queue
+    int head; // head of the queue
+    int tail; //tail of the queue
+    int capacity; 
+    struct element *array; // vector that forms the queue
 }queue;
 
 queue* queue_init (int size);
