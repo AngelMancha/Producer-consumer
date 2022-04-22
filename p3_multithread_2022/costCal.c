@@ -41,7 +41,10 @@ int main (int argc, const char * argv[] ) {
     const char *fileName = argv[1]; // file descriptor of the input file
     int numProducers = 0, numConsumers = 0; //num_producers, num_consumers
     int buffer[BUFFSIZE]; //buffer
-    char *operands;
+    int num_operands; // where the output is stored
+    int d0;
+    int d1;
+    int d2;
 
     //Read the input arugments
 
@@ -64,11 +67,27 @@ int main (int argc, const char * argv[] ) {
         printf("fopen: error\n");
         exit(-1);
     }
-    if (fscanf(output, "%s", operands) < 0){
+    //Store the number of operands (first number of the file)
+    if (fscanf(output, "%d", &num_operands) < 0){
         perror("Error while executing fscanf");
     }
-    int num_op = operands[0]; //obtain the number of operations specified in the file (first element)
-    char *used_memory = malloc(num_op * sizeof(struct element)); // reserve memory for all the operations in the file
-    free(used_memory);
+    int *file_info = (int *)malloc(num_operands * sizeof(int)); // reserve space in memory (TYPE and TIME are stored)
+	printf("The size used for the file_info is %ld \n", sizeof(file_info));
+    // 
+    int i=0;
+    while (i < num_operands+1) {
+        fscanf(output, "%d %d %d", &d0, &d1, &d2);
+	//printf("%d %d %d\n", d0, d1, d2);
+        file_info[i]= d1;
+        file_info[i+1] = d2;
+	
+	i = i+1;
+    }
+	printf("%d \n", num_operands);
+
+    
+    
+    free(file_info);
     return 0;
 }
+
