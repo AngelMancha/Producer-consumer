@@ -26,7 +26,6 @@ pthread_cond_t non_full; /* check if we can add more elements*/
 pthread_cond_t non_empty; /* check if we can remove more elements*/
 const char *fileName;
 int *file_info;
-int * final_result;
 struct queue *circularbuffer; //declaration of the circular buffer
 
 
@@ -91,10 +90,10 @@ void *producers(struct param_producer *argv) {
 
 }
 
-void *consumers(void * param) {
+void *consumers(int num_operands) {
     int i;
     int result = 0; //result of the process
-    for (i=0; i<param; i++) {
+    for (i=0; i<num_operands; i++) {
     /*Obtain the elements inserted in the queue and returns the partial cost calculated one by one*/
         if (pthread_mutex_lock(&mutex)<0){
         perror("Error lock mutex");
@@ -111,21 +110,15 @@ void *consumers(void * param) {
         /* CRITICAL SECTION */
         
         //variables for the operation
-        int type_variable = circularbuffer[i]->type;
-        int time_variable = circularbuffer[i]->time;
+        int type_variable = circularbuffer[i].array->type;
+        int time_variable = circularbuffer[i].array->time;
         int mult = 0;
 
         mult = type_variable * time_variable;
         result = result + mult;
         
         
-    
-        if(queue_deque(circularbuffer, &type_time) < 0){
-        perror("Error queue dequeue");
-        exit(-1);
-        }
-
-        if(queue_deque(circularbuffer, &type) < 0){
+        if(queue_get(circularbuffer) < 0){
         perror("Error queue dequeue");
         exit(-1);
         }
@@ -225,7 +218,7 @@ int main (int argc, const char * argv[] ) {
     numProducers = atoi(argv[2]);
     struct param_producer array_producer[numProducers];
     pthread_t producer[numProducers]; //thread for the producers
-    pthread_t consumer[numConsumers]; 
+    pthread_t consumer; 
     printf("hola\n");
     
     /*In order to know how many operations are made by the producer we divide the
@@ -259,13 +252,13 @@ int main (int argc, const char * argv[] ) {
         return -1;
 
         /* Consumer call */
-        if(pthread_create(&consumer, NULL, (void *)producers, &array_producer[i]) < 0){
+        if(pthread_create(&consumer, NULL, (void *)consumers, &num_operands) < 0){
         perror("Error creating thread");
         return -1;
         }
-    }
-    pthread_join(&producers, NULL);
-    pthread_join(&consumers, NULL);
+    }}
+    pthread_join(*producer, NULL);
+    pthread_join(consumer, NULL);
 
     /* DESTROY THE MUTEX */
     
@@ -288,4 +281,3 @@ int main (int argc, const char * argv[] ) {
     return 0;
 
 }
-
