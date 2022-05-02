@@ -35,6 +35,7 @@ struct param_producer{
     int final_id;
 };
 
+/**** Producer Thread ****/
 
 void *producers(struct param_producer *argv) {
     /*The purpose of the producer function is to obtain data extracted from the file 
@@ -46,13 +47,13 @@ void *producers(struct param_producer *argv) {
     while (i<argv->final_id){
         type_time.type = file_info[i];
         type_time.time = file_info[i+1];
-
+	printf("EL elemento que se añade es %d\n");
         /*initialize the mutex*/
         if (pthread_mutex_lock(&mutex)<0){
         perror("Error lock mutex");
         exit(-1); 
         }
-
+	printf("EL elemento que se añade es %d\n", type_time.type);
         /* CRITICAL SECTION */
         /* We check if the circular buffer is full and if it is, we block the 
         thread producer  with cond_wait so that it doesn´t add more elemetns to the buffer*/
@@ -69,6 +70,8 @@ void *producers(struct param_producer *argv) {
         perror("Error queue put");
         exit(-1);
         }
+	printf("EL elemento que se añade es %d\n", type_time.type);
+printf("EL elemento que se añade es %d\n", type_time.time);
         /* END CRITICAL SECTION */
 
         /*We unlock the thread producer suspended in the conditional variable
@@ -89,6 +92,8 @@ void *producers(struct param_producer *argv) {
     pthread_exit(0);
 
 }
+
+/**** Producer Thread ****/
 
 void *consumers(int num_operands) {
     int i;
@@ -148,7 +153,7 @@ int main (int argc, const char * argv[] ) {
         return -1;
     }
     //Variable definition
-    int BUFFSIZE = *argv[4]; // buff_size, indicates the size of the circular queue
+    int BUFFSIZE; // buff_size, indicates the size of the circular queue
     fileName = argv[1]; // file descriptor of the input file
     int numProducers = 0, numConsumers = 0; //num_producers, num_consumers
     //int buffer[BUFFSIZE]; //buffer
@@ -161,30 +166,38 @@ int main (int argc, const char * argv[] ) {
 
     //check the validity of the producers
     if ((atoi(argv[2])<=0 )){
-        printf("Invalid number of producers");
+        perror("Invalid number of producers");
+	return -1;
     }
     //check the validity of the consumers
     if ((atoi(argv[3])<=0 )){
-        printf("Invalid number of consumers");
+        perror("Invalid number of consumers");
+	return -1;
     }
     //check the validity of the buffersize
     if ((atoi(argv[4])<=0 )){
-        printf("Invalid buffer size");
+        perror("Invalid buffer size");
+	return -1;
     }
-
+//Once the arguments have been checked, we assign the values to its variables
+	numProducers = atoi(argv[2]);
+	numConsumers = atoi(argv[3]);
+	BUFFSIZE = atoi(argv[4]);
+	printf("%d\n %d\n %d\n", BUFFSIZE, numProducers, numConsumers);
     //The fopen function opens the file whose name is the string pointed to by pathname and associates a stream with it
     FILE * output = fopen(fileName, "r");
     if (NULL == output) {
         printf("fopen: error\n");
         exit(-1);
     }
+
     //Store the number of operands in num_operands(first number of the file)
     if (fscanf(output, "%d", &num_operands) < 0){
         perror("Error while executing fscanf");
     }
-    file_info = (int *)malloc(num_operands * sizeof(int)); // reserve space in memory (TYPE and TIME are stored)
+
+   file_info = (int *)malloc(num_operands * sizeof(int)); // reserve space in memory (TYPE and TIME are stored)
 	printf("The size used for the file_info is %ld \n", sizeof(file_info));
-    // 
     int i=0;
     while (i < num_operands+1) {
         fscanf(output, "%d %d %d", &d0, &d1, &d2);
@@ -196,11 +209,11 @@ int main (int argc, const char * argv[] ) {
     }
 
     if (fclose(output)<0){
-    perror("Error closing desc");
-    return -1;
+	    perror("Error closing desc");
+	    return -1;
 	}
-    
-    //Initialize the mutex
+
+   //Initialize the mutex
 	if (pthread_mutex_init(&mutex, NULL)<0){
 		perror("init mutex error");
     		return -1;
@@ -213,21 +226,20 @@ int main (int argc, const char * argv[] ) {
 		perror("init cond error");
     		return -1;
 	}
+
     /*create an array of param_producers that contains as many 
     structures as the num producers obtained in the input*/
-    numProducers = atoi(argv[2]);
     struct param_producer array_producer[numProducers];
     pthread_t producer[numProducers]; //thread for the producers
     pthread_t consumer; 
-    printf("hola\n");
-    
+ 
     /*In order to know how many operations are made by the producer we divide the
     num of operations (500)/numProducer*/
     /*we check with remainder if the number is decimal with %, in which case the result 
     of the division is increased*/
 
     int num_operations_producer = num_operands / numProducers;
-    printf("number of op is %d \n the num of prod is %d\n next %d", num_operands, numProducers, num_operations_producer);
+    printf("number of op is %d \nthe num of prod is %d\nnext %d\n", num_operands, numProducers, num_operations_producer);
     int remainder = num_operands % numProducers;
 	printf("the remainder is %d \n", remainder);
     if (remainder !=0){
@@ -239,24 +251,33 @@ int main (int argc, const char * argv[] ) {
     
     /* Initialize the circular buffer (queue) */
     circularbuffer = queue_init(BUFFSIZE);
-
+printf("EStoy aqui\n");
     /* Consumer- Producer*/
-    for (int i = 0; i<=numProducers; i++){
+int a=0;
+    while (a < numProducers) {
+	//printf("Me itero %d veces\n", a);
         array_producer[i].init_id = i;
         array_producer[i].final_id = i + num_operations_producer;
         i =  i + num_operations_producer;
-
+printf("%ln\n", &producer[i]);
         /* Producer call */
-        if(pthread_create(&producer[i], NULL, (void *)producers, &array_producer[i]) < 0){
+        if(pthread_create(&producer[i], NULL, (void *)producers,(void *) &array_producer[i]) < 0){
         perror("Error creating thread");
         return -1;
+	}
 
+	a = a+1;
+
+    }
+	int e = 0;
+	while (e < numConsumers){
         /* Consumer call */
         if(pthread_create(&consumer, NULL, (void *)consumers, &num_operands) < 0){
         perror("Error creating thread");
         return -1;
         }
-    }}
+	e = e+1;
+}
     pthread_join(*producer, NULL);
     pthread_join(consumer, NULL);
 
