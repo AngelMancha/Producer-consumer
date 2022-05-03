@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -43,17 +42,20 @@ void *producers(struct param_producer *argv) {
     //Reciever thread
     struct element type_time;
     //
-    int i = argv->init_id;
-    while (i<argv->final_id){
-        type_time.type = file_info[i];
-        type_time.time = file_info[i+1];
-	printf("EL elemento que se añade es %d\n");
+    int initial = argv->init_id;
+    int j=0;
+    while (initial<argv->final_id){ 
+	j=initial; /*adjust the index */
+	j=j*2;
+        type_time.type = file_info[j];
+        type_time.time = file_info[j+1];
+	
+	
         /*initialize the mutex*/
         if (pthread_mutex_lock(&mutex)<0){
         perror("Error lock mutex");
         exit(-1); 
         }
-	printf("EL elemento que se añade es %d\n", type_time.type);
         /* CRITICAL SECTION */
         /* We check if the circular buffer is full and if it is, we block the 
         thread producer  with cond_wait so that it doesn´t add more elemetns to the buffer*/
@@ -71,7 +73,7 @@ void *producers(struct param_producer *argv) {
         exit(-1);
         }
 	printf("EL elemento que se añade es %d\n", type_time.type);
-printf("EL elemento que se añade es %d\n", type_time.time);
+	printf("EL elemento que se añade es %d\n", type_time.time);
         /* END CRITICAL SECTION */
 
         /*We unlock the thread producer suspended in the conditional variable
@@ -87,7 +89,7 @@ printf("EL elemento que se añade es %d\n", type_time.time);
 			perror("Error unlock mutex");
         		exit(-1);		
 		}
-    i = i + 2;
+    initial = initial + 1;
     }
     pthread_exit(0);
 
@@ -205,7 +207,7 @@ int main (int argc, const char * argv[] ) {
         file_info[i]= d1;
         file_info[i+1] = d2;
 	
-	i = i+1;
+	i = i+2;
     }
 
     if (fclose(output)<0){
@@ -254,14 +256,15 @@ int main (int argc, const char * argv[] ) {
 printf("EStoy aqui\n");
     /* Consumer- Producer*/
 int a=0;
+int id=0;
     while (a < numProducers) {
-	//printf("Me itero %d veces\n", a);
-        array_producer[i].init_id = i;
-        array_producer[i].final_id = i + num_operations_producer;
-        i =  i + num_operations_producer;
-printf("%ln\n", &producer[i]);
+	printf("EMPIEZO EN EL ID %d\n",id); 
+        array_producer[a].init_id = id;
+        array_producer[a].final_id = id + num_operations_producer;
+        id =  id + num_operations_producer;
+
         /* Producer call */
-        if(pthread_create(&producer[i], NULL, (void *)producers,(void *) &array_producer[i]) < 0){
+        if(pthread_create(&producer[a], NULL, (void *)producers, &array_producer[a]) < 0){
         perror("Error creating thread");
         return -1;
 	}
