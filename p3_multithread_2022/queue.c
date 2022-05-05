@@ -1,13 +1,11 @@
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include "queue.h"
 
-
+ 
 
 //To create a queue
 queue* queue_init(int size){
@@ -24,8 +22,13 @@ queue* queue_init(int size){
 
 // To Enqueue an element
 int queue_put(queue *q, struct element* x) {
+	int ret ;
+
 	//In case the queue is full, there is no need to append more elements
-	queue_full(q);
+        queue_full(q);
+	ret = queue_full(q);
+        if(1 == ret)
+            return 1;
 	q->array[q-> tail] = *x; //we enqueue a new element at the tail in the queue (FIFO)
 	q-> tail = q-> tail +1; // increment by one the size of the array
 	q->capacity = q->capacity + 1; // the number of elements is increased by one
@@ -34,11 +37,48 @@ int queue_put(queue *q, struct element* x) {
 
 
 // To Dequeue an element.
+/*
+try1
 struct element* queue_get(queue *q) {
 	//In case the queue is full, there is no need to extractelements
-	queue_empty(q);
+        int ret ;
+
+	ret = queue_empty(q);
+        if (1 == ret)
+            return -1;
 	struct element* element;
 	element = &(q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
+	q-> head = q->head + 1; //we increase by one the head
+	q->capacity = q->capacity -1; // the number of elements is decreased by one
+	return element;
+}
+
+try2
+struct element* queue_get(queue *q) {
+        int ret ;
+	struct element element;
+
+	ret = queue_empty(q);
+        if (1 == ret)
+            return -1;
+
+	element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
+	q-> head = q->head + 1; //we increase by one the head
+	q->capacity = q->capacity -1; // the number of elements is decreased by one
+	return &element;
+}
+
+*/
+
+struct element queue_get(queue *q) {
+        int ret ;
+	struct element element;
+
+	ret = queue_empty(q);
+        if (1 == ret)
+          return element;
+
+	element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
 	q-> head = q->head + 1; //we increase by one the head
 	q->capacity = q->capacity -1; // the number of elements is decreased by one
 	return element;
@@ -48,7 +88,7 @@ struct element* queue_get(queue *q) {
 int queue_empty(queue *q){
 	if (q->size != 0) {
 		printf("Queue not empty");
-		return 1; // return -1 in case the queue is not empty
+		return 1; // return -1 in case the queue is empty
 	}
 	return 0;
 }
