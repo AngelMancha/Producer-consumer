@@ -18,6 +18,7 @@
  * @return
  */
 
+int fin = 0; // fin es falso
 //we init the mutex and the condition variables associated to the mutex
 pthread_mutex_t mutex; /*mutex to access shared buffer */
 pthread_cond_t non_full; /* check if we can add more elements*/
@@ -42,7 +43,6 @@ void *producers(struct param_producer *argv) {
     struct element type_time;
     //
     int initial = argv->init_id;
-    int j=0;
     while (initial<argv->final_id){ 
 
         type_time.type = file_info[initial].type;
@@ -81,7 +81,6 @@ void *producers(struct param_producer *argv) {
 			perror("Error cond signal no vacio");
         		exit(-1);		
 		}
-
         /*We unlock the mutex*/
 		if (pthread_mutex_unlock(&mutex)<0){
 			perror("Error unlock mutex");
@@ -91,55 +90,62 @@ void *producers(struct param_producer *argv) {
     }
     
     pthread_exit(0);
+    
 
 }
 
 /**** Producer Thread ****/
 
 void *consumers(int num_operands) {
-	
-    int i;
-	int *result;
-	result=malloc(sizeof(int));
-    struct element consumer_operands;
-    for (i=0; i< num_operands; i++) {
+        
+        struct element consumer_operands;
+        int i;
+	int *result = 0;
 
-    /*Obtain the elements inserted in the queue and returns the partial cost calculated one by one*/
-        if (pthread_mutex_lock(&mutex)<0){
-        perror("Error lock mutex");
-        exit(-1); 
-        }
-        //CONDITION
-        while (queue_empty(circularbuffer)==1){
-            if(pthread_cond_wait(&non_empty, &mutex) < 0){ //no_empty is now suspended
+	result=malloc(sizeof(int));
+
+        for ( ;; ) {
+
+           /*Obtain the elements inserted in the queue and returns the partial cost calculated one by one*/
+           if (pthread_mutex_lock(&mutex)<0){
+               perror("Error lock mutex");
+               exit(-1); 
+           }
+           //CONDITION
+           //variable global fin que cuando es cero espera a que producer acabe
+           while ((fin == 0) && (queue_empty(circularbuffer)==1)){
+                if(pthread_cond_wait(&non_empty, &mutex) < 0){ //no_empty is now suspended
         			perror("Error cond wait no lleno");
         			exit(-1);
-      			}  
-        }
+      		}  
+           }
+           //producer acaba
+           if (1 == fin) {
 
-        /* CRITICAL SECTION */
-        printf("HOLA");
-        //variables for the operation
-        struct element *consumer_operands = queue_get(circularbuffer);
-        if (consumer_operands->time <0){
+                   if (pthread_mutex_unlock(&mutex)<0){
+			perror("Error unlock mutex");
+        		exit(-1);		
+		   }
+                   /* CRITICAL SECTION */
+                   //printf("HOLA");
+                  //variables for the operation
+                  consumer_operands = queue_get(circularbuffer);
+                   if (consumer_operands.time <0){
 			printf("Error in time format\n");
-        }
-        else if (consumer_operands->type==1){
-			*result=*result+((consumer_operands->time)*3);
-		}
-		else if (consumer_operands->type==2){
-			*result=*result+((consumer_operands->time)*6);
-		}
-		else if (consumer_operands->type==3){
-			*result=*result+((consumer_operands->time)*15);
-		}
-		else{
+                       }
+                   else if (consumer_operands.type==1){
+			*result=*result+((consumer_operands.time)*3);
+		   }
+		   else if (consumer_operands.type==2){
+			*result=*result+((consumer_operands.time)*6);
+		    }
+		   else if (consumer_operands.type==3){
+			*result=*result+((consumer_operands.time)*15);
+		    }
+		   else{
 			printf("Error in type format\n");
 			//we dont exit cause we need to keep processing data
-        }
-
-
-        /*We unlock the thread producer suspended in the conditional variable
+                  /*We unlock the thread producer suspended in the conditional variable
         no_full and the mutex is ready to be 
         acquired again*/
         if (pthread_cond_signal(&non_full)<0){ 
@@ -151,9 +157,48 @@ void *consumers(int num_operands) {
 			perror("Error unlock mutex");
         		exit(-1);		
 		}
-    }
-    free(result);
-    pthread_exit((void *)result);
+        } 
+                 //printf("HOLA?%ls", result);
+                   pthread_exit((void *)result);
+           }
+
+        /* CRITICAL SECTION 
+        printf("HOLA");
+        //variables for the operation
+        consumer_operands = queue_get(circularbuffer);
+        if (consumer_operands.time <0){
+			printf("Error in time format\n");
+        }
+        else if (consumer_operands.type==1){
+			*result=*result+((consumer_operands.time)*3);
+		}
+		else if (consumer_operands.type==2){
+			*result=*result+((consumer_operands.time)*6);
+		}
+		else if (consumer_operands.type==3){
+			*result=*result+((consumer_operands.time)*15);
+		}
+		else{
+			printf("Error in type format\n");
+			//we dont exit cause we need to keep processing data
+        } */
+		
+
+
+        /*We unlock the thread producer suspended in the conditional variable
+        no_full and the mutex is ready to be 
+        acquired again*/
+        //if (pthread_cond_signal(&non_full)<0){ 
+	//		perror("Error cond signal no vacio");
+        //		exit(-1);		
+		}
+        /* Unlock the mutex */
+        //if (pthread_mutex_unlock(&mutex)<0){
+	//		perror("Error unlock mutex");
+        //		exit(-1);		
+		//}
+    //}
+    //pthread_exit((void *)result);
 }
 
 
@@ -169,6 +214,7 @@ int main (int argc, const char * argv[] ) {
     int numProducers = 0, numConsumers = 0; //num_producers, num_consumers
     //int buffer[BUFFSIZE]; //buffer
     int num_operands; // where the output is stored
+    int prueba; //pruebas file_info
     int d0;
     int d1;
     int d2;
@@ -194,33 +240,38 @@ int main (int argc, const char * argv[] ) {
 	numProducers = atoi(argv[2]);
 	numConsumers = atoi(argv[3]);
 	BUFFSIZE = atoi(argv[4]);
-	printf("%d\n %d\n %d\n", BUFFSIZE, numProducers, numConsumers);
+	//printf("%d\n %d\n %d\n", BUFFSIZE, numProducers, numConsumers);
     //The fopen function opens the file whose name is the string pointed to by pathname and associates a stream with it
     FILE * output = fopen(fileName, "r");
     if (NULL == output) {
         printf("fopen: error\n");
         exit(-1);
     }
+	int num_operands_file;
 
     //Store the number of operands in num_operands(first number of the file)
-    if (fscanf(output, "%d", &num_operands) < 0){
-        perror("Error while executing fscanf");
+    if (fscanf(output, "%d", &num_operands_file) < 0){
+       perror("Error while executing fscanf");
     }
-
+printf("%d", num_operands_file);
+    num_operands = BUFFSIZE;
+    
    
-    file_info =malloc(num_operands * sizeof(struct element)); // reserve space in memory (TYPE and TIME are stored) 
+    file_info =malloc(num_operands_file * sizeof(struct element)); // reserve space in memory (TYPE and TIME are stored) 
     int dummy_var;
-    struct element element_1[num_operands];
+    struct element element_1[num_operands_file];
     //printf("The size used for the file_info is %ld \n", sizeof(file_info));
     int i=0;
-    while (i < num_operands+1) {
+    while (i < num_operands_file+1) {
+
         fscanf(output, "%d %d %d", &dummy_var, &element_1[i].type, &element_1[i].time);
-	
         //esa estructura asignarla a file_info cero
 	file_info[i]=element_1[i];
+		//printf("\n\n\n%d, %d, %d\n\n\n", dummy_var, element_1[i].type, element_1[i].time);
 	printf("%d, %d\n", file_info[i].type, file_info[i].time );
 	i = i+1;
     }
+
 
     if (fclose(output)<0){
 	    perror("Error closing desc");
@@ -253,19 +304,20 @@ int main (int argc, const char * argv[] ) {
     of the division is increased*/
 
     int num_operations_producer = num_operands / numProducers;
-    printf("number of op is %d \nthe num of prod is %d\nnext %d\n", num_operands, numProducers, num_operations_producer);
+   // printf("number of op is %d \nthe num of prod is %d\nnext %d\n", num_operands, numProducers, num_operations_producer);
     int remainder = num_operands % numProducers;
-	printf("the remainder is %d \n", remainder);
+	//printf("the remainder is %d \n", remainder);
+/*
     if (remainder !=0){
         num_operations_producer = num_operations_producer + 1;
-    }
+    }*/
 
     /* Calculate the number of operations that each consumer wants to execute */
 
     
     /* Initialize the circular buffer (queue) */
     circularbuffer = queue_init(BUFFSIZE);
-printf("EStoy aqui\n");
+//printf("EStoy aqui\n");
     /* Consumer- Producer*/
 int a=0;
 int id=0;
@@ -273,6 +325,10 @@ int id=0;
 	//printf("EMPIEZO EN EL ID %d\n",id); 
         array_producer[a].init_id = id;
         array_producer[a].final_id = id + num_operations_producer;
+        if (remainder != 0) {
+           array_producer[a].final_id += 1 ;
+           remainder -= 1;
+           }
         id =  id + num_operations_producer;
 
         /* Producer call */
@@ -280,39 +336,61 @@ int id=0;
         perror("Error creating thread");
         return -1;
 	}
-
 	a = a+1;
 
     }
 	int e = 0;
 	while (e < numConsumers){
-        /* Consumer call */
-        if(pthread_create(&consumer[e], NULL, (void *)consumers, &num_operands) < 0){
-        perror("Error creating thread");
-        return -1;
+           /* Consumer call */
+           if(pthread_create(&consumer[e], NULL, (void *)consumers, &num_operands) < 0){
+              perror("Error creating thread");
+              return -1;
+           }
+	   e = e+1;
         }
-	e = e+1;
-}
 
-    printf("\nESTAS AQUÍ\n");
-    int *result_main;
-    result_main = malloc(sizeof(int));
-	//we wait for all the threads to finish 
-	
-	for (int i = 0; i < numConsumers; i++) {
-    		if(pthread_join(consumer[i], (void **)&result_main) < 0){
-      		perror("Error waiting for producer thread");
-      		return -1;
-    		}
-    }
 
-	result_main=(int *)result_main;
 	for (int i = 0; i < numProducers; i++) {
     		if(pthread_join(producer[i], NULL) < 0){
       		perror("Error waiting for producer thread");
       		return -1;
     		}
   	}
+
+                   if (pthread_mutex_lock(&mutex)<0){
+			perror("Error unlock mutex");
+        		exit(-1);		
+		   }
+                   fin=1;
+                   if (pthread_cond_broadcast(&non_empty)<0){ 
+			perror("Error cond signal no vacio");
+        		exit(-1);		
+	  	   }
+                   if (pthread_mutex_unlock(&mutex)<0){
+			perror("Error unlock mutex");
+        		exit(-1);		
+		   }
+
+
+    //printf("\nESTAS AQUÍ\n");
+    int *result_main;
+    int total_main = 0;
+    result_main = malloc(sizeof(int));
+	//we wait for all the threads to finish 
+	
+
+
+
+	for (int i = 0; i < numConsumers; i++) {
+    		if(pthread_join(consumer[i], (void **)&result_main) < 0){
+         		perror("Error waiting for producer thread");
+         		return -1;
+    		}
+		total_main = total_main + *result_main;
+                //free(result_main);
+    }
+
+	//result_main=(int *)result_main;
 
 
 
@@ -335,11 +413,11 @@ int id=0;
     //Destroy the circular buffer
     queue_destroy(circularbuffer);
     free(file_info);
-    free(result_main);
+    //free(result_main);
 
 
 
-    printf("Total: %i €.\n", *result_main);
+    printf("Total: %i €.\n", total_main);
     return 0;
-
+ 
 }
