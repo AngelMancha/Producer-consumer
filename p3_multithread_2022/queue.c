@@ -48,7 +48,7 @@ struct element* queue_get(queue *q) {
 int queue_empty(queue *q){
 	if (q->size != 0) {
 		printf("Queue not empty");
-		return -1; // return -1 in case the queue is not empty
+		return 1; // return -1 in case the queue is not empty
 	}
 	return 0;
 }
@@ -57,7 +57,7 @@ int queue_full(queue *q){
 	// si size = sizeof(queue) q->size == q.size
 	if (q->size == q -> capacity ){
 		printf("Queue is full");
-		return -1; // return -1 in case the queue is full
+		return 1; // return -1 in case the queue is full
 	}
 	return 0;
 	
