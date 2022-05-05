@@ -214,7 +214,6 @@ int main (int argc, const char * argv[] ) {
     int numProducers = 0, numConsumers = 0; //num_producers, num_consumers
     //int buffer[BUFFSIZE]; //buffer
     int num_operands; // where the output is stored
-    int prueba; //pruebas file_info
     int d0;
     int d1;
     int d2;
@@ -253,7 +252,6 @@ int main (int argc, const char * argv[] ) {
     if (fscanf(output, "%d", &num_operands_file) < 0){
        perror("Error while executing fscanf");
     }
-printf("%d", num_operands_file);
     num_operands = BUFFSIZE;
     
    
