@@ -72,6 +72,7 @@ void *producers(struct param_producer *argv) {
         }
 	//printf("EL elemento que se añade es %d\n", type_time.type);
 	//printf("EL elemento que se añade es %d\n", type_time.time);
+	//printf("ESTAMOS EN EL PRODUCER NÚMERO %d\n", initial);
         /* END CRITICAL SECTION */
 
         /*We unlock the thread producer suspended in the conditional variable
@@ -97,13 +98,14 @@ void *producers(struct param_producer *argv) {
 /**** Producer Thread ****/
 
 void *consumers(int num_operands) {
-        
         struct element consumer_operands;
+	struct element pruebaa;
+	
         int i;
-	int *result = 0;
+	int result ;
 
-	result=malloc(sizeof(int));
-
+	int* result_store=malloc(sizeof(int));
+	
         for ( ;; ) {
 
            /*Obtain the elements inserted in the queue and returns the partial cost calculated one by one*/
@@ -128,26 +130,31 @@ void *consumers(int num_operands) {
 		   }
                    /* CRITICAL SECTION */
                    //printf("HOLA");
-                  //variables for the operation
                   consumer_operands = queue_get(circularbuffer);
+printf("LO QUE SACO ES %d Y %d\n", consumer_operands.type, consumer_operands.time);
                    if (consumer_operands.time <0){
 			printf("Error in time format\n");
                        }
+
+
                    else if (consumer_operands.type==1){
-			*result=*result+((consumer_operands.time)*3);
+			result=result+((consumer_operands.time)*3);
 		   }
 		   else if (consumer_operands.type==2){
-			*result=*result+((consumer_operands.time)*6);
+			result=result+((consumer_operands.time)*6);
 		    }
 		   else if (consumer_operands.type==3){
-			*result=*result+((consumer_operands.time)*15);
+			result=result+((consumer_operands.time)*15);
+
 		    }
 		   else{
+			
 			printf("Error in type format\n");
 			//we dont exit cause we need to keep processing data
                   /*We unlock the thread producer suspended in the conditional variable
         no_full and the mutex is ready to be 
         acquired again*/
+	
         if (pthread_cond_signal(&non_full)<0){ 
 			perror("Error cond signal no vacio");
         		exit(-1);		
@@ -159,7 +166,11 @@ void *consumers(int num_operands) {
 		}
         } 
                  //printf("HOLA?%ls", result);
-                   pthread_exit((void *)result);
+			
+		   *result_store = result;
+printf("\nResult: %d\n", *result_store);
+printf("\n*Restul store%d\n", *result_store);
+                   pthread_exit((void *)result_store);
            }
 
         /* CRITICAL SECTION 
@@ -214,6 +225,7 @@ int main (int argc, const char * argv[] ) {
     int numProducers = 0, numConsumers = 0; //num_producers, num_consumers
     //int buffer[BUFFSIZE]; //buffer
     int num_operands; // where the output is stored
+    int prueba; //pruebas file_info
     int d0;
     int d1;
     int d2;
@@ -242,6 +254,7 @@ int main (int argc, const char * argv[] ) {
 	//printf("%d\n %d\n %d\n", BUFFSIZE, numProducers, numConsumers);
     //The fopen function opens the file whose name is the string pointed to by pathname and associates a stream with it
     FILE * output = fopen(fileName, "r");
+
     if (NULL == output) {
         printf("fopen: error\n");
         exit(-1);
@@ -252,23 +265,30 @@ int main (int argc, const char * argv[] ) {
     if (fscanf(output, "%d", &num_operands_file) < 0){
        perror("Error while executing fscanf");
     }
+
     num_operands = BUFFSIZE;
     
    
-    file_info =malloc(num_operands_file * sizeof(struct element)); // reserve space in memory (TYPE and TIME are stored) 
+    file_info =malloc(num_operands * sizeof(struct element)); // reserve space in memory (TYPE and TIME are stored) 
+//printf("ELEMENTO DEL FILE INFO ES: %d \n", file_info->time);
     int dummy_var;
-    struct element element_1[num_operands_file];
-    //printf("The size used for the file_info is %ld \n", sizeof(file_info));
-    int i=0;
-    while (i < num_operands_file+1) {
+    struct element element_1[num_operands];
+
+    int i;
+int h =0;
+
+    for (i=0; i < num_operands; i++) {
 
         fscanf(output, "%d %d %d", &dummy_var, &element_1[i].type, &element_1[i].time);
         //esa estructura asignarla a file_info cero
 	file_info[i]=element_1[i];
 		//printf("\n\n\n%d, %d, %d\n\n\n", dummy_var, element_1[i].type, element_1[i].time);
 	printf("%d, %d\n", file_info[i].type, file_info[i].time );
-	i = i+1;
+	
     }
+//printf("ELEMENTO DEL FILE INFO ES: %d \n", file_info[9].time);
+size_t n = sizeof(file_info)/sizeof(file_info[0]);
+
 
 
     if (fclose(output)<0){
@@ -315,6 +335,8 @@ int main (int argc, const char * argv[] ) {
     
     /* Initialize the circular buffer (queue) */
     circularbuffer = queue_init(BUFFSIZE);
+	
+
 //printf("EStoy aqui\n");
     /* Consumer- Producer*/
 int a=0;
@@ -337,6 +359,9 @@ int id=0;
 	a = a+1;
 
     }
+
+
+
 	int e = 0;
 	while (e < numConsumers){
            /* Consumer call */
@@ -411,7 +436,8 @@ int id=0;
     //Destroy the circular buffer
     queue_destroy(circularbuffer);
     free(file_info);
-    //free(result_main);
+    free(result_main);
+	
 
 
 
