@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -32,6 +31,7 @@ int queue_put(queue *q, struct element* x) {
 	q->array[q-> tail] = *x; //we enqueue a new element at the tail in the queue (FIFO)
 	q-> tail = q-> tail +1; // increment by one the size of the array
 	q->capacity = q->capacity + 1; // the number of elements is increased by one
+//printf("\nTenemos el elemento %d\n\n", q->array[q-> tail].time);
 	return 0;
 }
 
@@ -42,7 +42,6 @@ try1
 struct element* queue_get(queue *q) {
 	//In case the queue is full, there is no need to extractelements
         int ret ;
-
 	ret = queue_empty(q);
         if (1 == ret)
             return -1;
@@ -52,22 +51,18 @@ struct element* queue_get(queue *q) {
 	q->capacity = q->capacity -1; // the number of elements is decreased by one
 	return element;
 }
-
 try2
 struct element* queue_get(queue *q) {
         int ret ;
 	struct element element;
-
 	ret = queue_empty(q);
         if (1 == ret)
             return -1;
-
 	element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
 	q-> head = q->head + 1; //we increase by one the head
 	q->capacity = q->capacity -1; // the number of elements is decreased by one
 	return &element;
 }
-
 */
 
 struct element queue_get(queue *q) {
@@ -75,10 +70,12 @@ struct element queue_get(queue *q) {
 	struct element element;
 
 	ret = queue_empty(q);
-        if (1 == ret)
+        if (0 == ret)
           return element;
 
-	element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
+	memcpy(&element, &q -> array[q->head], sizeof(struct element));
+	//element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
+//printf("\n\n EStamos en el queue.c y sacamos:%d\n", element.type);
 	q-> head = q->head + 1; //we increase by one the head
 	q->capacity = q->capacity -1; // the number of elements is decreased by one
 	return element;
