@@ -111,13 +111,13 @@ struct element *queue_get(queue *q) {
 
 //To check queue state
 int queue_empty(queue *q){
-	if (q->size != 0) {
-		printf("Queue not empty");
-		return 0; // return -1 in case the queue is empty
+	if (q->capacity == 0) {
+		printf("Queue empty");
+		return 1; // return -1 in case the queue is empty
 	}
-	else if (q -> size == 0){
-	return 1;
-	}
+	
+	return 0;
+	
 	
 }
 
