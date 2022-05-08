@@ -45,7 +45,7 @@ void *producers(struct param_producer *argv) {
     //
   int i;
     //printf("\nEl inicial es: %d\n el final es %d\n", initial, argv->final_id);
-   for ( i=argv->init_id; i<argv->final_id -1 ; i++ ){
+   for ( i=argv->init_id; i<argv->final_id; i++ ){
 
 
 	printf("\nEl inicial es: %d\n el final es %d\n", i, argv->final_id);
@@ -250,7 +250,7 @@ int h =0;
         //esa estructura asignarla a file_info cero
 	file_info[i]=element_1[i];
 		//printf("\n\n\n%d, %d, %d\n\n\n", dummy_var, element_1[i].type, element_1[i].time);
-	//printf("%d, %d\n", file_info[i].type, file_info[i].time );
+	printf("%d, %d\n", file_info[i].type, file_info[i].time );
 	
     }
 //printf("ELEMENTO DEL FILE INFO ES: %d \n", file_info[9].time);
@@ -289,11 +289,13 @@ size_t n = sizeof(file_info)/sizeof(file_info[0]);
     of the division is increased*/
 
     int num_operations_producer = num_operands_file / numProducers;
+    int remainder = num_operands_file-(num_operations_producer*numProducers);
+
     int num_operations_consumer = num_operands_file / numConsumers;
+    int remainder_2 = num_operands_file-(num_operations_consumer*numConsumers);
    // printf("number of op is %d \nthe num of prod is %d\nnext %d\n", num_operands, numProducers, num_operations_producer);
-    int remainder = num_operands_file % numProducers;
 printf("REMAINDEEEEEEEEEEEEEEEEER %d\n", remainder);
-    int remainder_2 = num_operands_file % numConsumers;
+    
 
 	//printf("the remainder is %d \n", remainder);
 /*
@@ -309,47 +311,56 @@ printf("REMAINDEEEEEEEEEEEEEEEEER %d\n", remainder);
 
 //printf("EStoy aqui\n");
     /* Consumer- Producer*/
-int a=0;
+int a;
 int id=0;
-    while (a < numProducers -1) {
-	//printf("EMPIEZO EN EL ID %d\n",id); 
-        array_producer[a].init_id = id;
-        array_producer[a].final_id = id + num_operations_producer;
-        id =  id + num_operations_producer;
+    for  (a=0; a < numProducers; a++) {
 
+        if (remainder == 0) {
+            //printf("EMPIEZO EN EL ID %d\n",id); 
+            array_producer[a].init_id = id;
+            array_producer[a].final_id = id + num_operations_producer;
+            id =  id + num_operations_producer;
+        }
+
+        else{
+            array_producer[a].init_id = id;
+            array_producer[a].final_id = id + num_operations_producer + 1;
+            remainder = remainder -1;
+            id =  id + num_operations_producer +1;
+
+            }
         /* Producer call */
         if(pthread_create(&producer[a], NULL, (void *)producers, &array_producer[a]) < 0){
         perror("Error creating thread");
-        return -1;
-	}
-	a = a+1;
-
+        return -1;   
+        }
     }
-     //ultimo producer
-      array_producer[numProducers -1].init_id = id;
-      array_producer[numProducers -1].final_id = id +  num_operations_producer+ remainder;
-     if(pthread_create(&producer[a], NULL, (void *)producers, &array_producer[a]) < 0){
-        perror("Error creating thread");
-        return -1;
-	}
+	
+	int e;
+    printf("EL numero de consumidores es: %d\n", numConsumers);
+	for (e=0; e < numConsumers; e++){
 
-	int e = 0;
-printf("EL numero de consumidores es: %d\n", numConsumers);
-	while (e < numConsumers -1){
+        if (remainder_2==0){
            /* Consumer call */
-	printf("Me he iterado %d veces", e);
+	       printf("Me he iterado %d veces", e);
            if(pthread_create(&consumer[e], NULL, (void *)consumers, &num_operations_consumer) < 0){
               perror("Error creating thread");
               return -1;
            }
-	   e = e+1;
         }
-int sobras = num_operations_consumer + remainder_2;
-//ultimo consumer
-          if(pthread_create(&consumer[e], NULL, (void *)consumers, &sobras) < 0){
+
+        else{
+ 	       printf("Me he iterado %d veces", e);
+           if(pthread_create(&consumer[e], NULL, (void *)consumers, &num_operations_consumer+1) < 0){
               perror("Error creating thread");
               return -1;
            }
+           remainder_2 = remainder_2 -1;           
+
+        }
+
+    }
+
 
 
 
