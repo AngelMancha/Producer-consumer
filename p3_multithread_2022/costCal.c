@@ -100,11 +100,10 @@ void *producers(struct param_producer *argv) {
 /**** Producer Thread ****/
 
 void *consumers(int *operations_consumers) {
-        
-        struct element *consumer_operands;
+    
 	int * result ;
 	result =malloc(sizeof(int));
-	
+	struct element consumer_operands;
         for (int i=0; i < *operations_consumers; i++) {
           
            /*Obtain the elements inserted in the queue and returns the partial cost calculated one by one*/
@@ -122,7 +121,7 @@ void *consumers(int *operations_consumers) {
            //producer acaba
                    /* CRITICAL SECTION */
 
-          struct element  *consumer_operands = queue_get(circularbuffer);
+         struct element *consumer_operands = queue_get(circularbuffer);
             if (consumer_operands->time <0){
 			printf("Error in time format\n");
                        }
