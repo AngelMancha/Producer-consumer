@@ -22,16 +22,18 @@ queue* queue_init(int size){
 // To Enqueue an element
 int queue_put(queue *q, struct element* x) {
 	int ret ;
+        ret = q->tail+1;
 
 	//In case the queue is full, there is no need to append more elements
-        queue_full(q);
-	ret = queue_full(q);
-        if(1 == ret)
-            return 1;
-	q->array[q-> tail] = *x; //we enqueue a new element at the tail in the queue (FIFO)
-	q-> tail = q-> tail +1; // increment by one the size of the array
-	q->capacity = q->capacity + 1; // the number of elements is increased by one
-//printf("\nTenemos el elemento %d\n\n", q->array[q-> tail].time);
+        if (ret >= q-> size) {
+          ret = 0;
+        }
+        if ((q->capacity) == q->size) {
+          return 1; 
+        }
+        q->capacity = q->capacity +1;// the number of elements is increased by one
+        q->array[q-> tail] = *x; //we enqueue a new element at the tail in the queue (FIFO)
+        q->tail = ret;
 	return 0;
 }
 
@@ -69,11 +71,9 @@ struct element* queue_get(queue *q) {
 struct element queue_get(queue *q) {
         int ret ;
 	struct element element;
-
 	ret = queue_empty(q);
         if (1 == ret)
           return element;
-
 	memcpy(&element, &(q -> array[q->head]), sizeof(struct element));
 	//element = (q -> array[q->head]); // element = q.array[tail] we deque the first element in the queue (FIFO)
 printf("\n\n EStamos en el queue.c y sacamos:%d\n", element.type);
@@ -112,7 +112,6 @@ struct element *queue_get(queue *q) {
 //To check queue state
 int queue_empty(queue *q){
 	if (q->capacity == 0) {
-		printf("Queue empty");
 		return 1; // return -1 in case the queue is empty
 	}
 	
@@ -124,7 +123,6 @@ int queue_empty(queue *q){
 int queue_full(queue *q){
 	// si size = sizeof(queue) q->size == q.size
 	if (q->size == q -> capacity ){
-		printf("Queue is full");
 		return 1; // return 1 in case the queue is full
 	}
 	return 0;
