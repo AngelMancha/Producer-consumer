@@ -1,1 +1,1 @@
-# SSOO-lab-3
+Ángel José Mancha Núñez, Paloma Núñez Reyes, Ruth Navaro Carrasco
